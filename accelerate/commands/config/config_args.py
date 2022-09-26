@@ -22,8 +22,7 @@ from typing import Optional, Union
 
 import yaml
 
-from ...utils import ComputeEnvironment, DistributedType, SageMakerDistributedType
-from ...utils.constants import SAGEMAKER_PYTHON_VERSION, SAGEMAKER_PYTORCH_VERSION, SAGEMAKER_TRANSFORMERS_VERSION
+from ...utils import ComputeEnvironment, DistributedType
 
 
 hf_cache_home = os.path.expanduser(
@@ -45,29 +44,17 @@ def load_config_from_file(config_file):
     config_file = config_file if config_file_exists else default_config_file
     with open(config_file, "r", encoding="utf-8") as f:
         if config_file.endswith(".json"):
-            if (
-                json.load(f).get("compute_environment", ComputeEnvironment.LOCAL_MACHINE)
-                == ComputeEnvironment.LOCAL_MACHINE
-            ):
-                config_class = ClusterConfig
-            else:
-                config_class = SageMakerConfig
+            config_class = ClusterConfig
             return config_class.from_json_file(json_file=config_file)
         else:
-            if (
-                yaml.safe_load(f).get("compute_environment", ComputeEnvironment.LOCAL_MACHINE)
-                == ComputeEnvironment.LOCAL_MACHINE
-            ):
-                config_class = ClusterConfig
-            else:
-                config_class = SageMakerConfig
+            config_class = ClusterConfig
             return config_class.from_yaml_file(yaml_file=config_file)
 
 
 @dataclass
 class BaseConfig:
     compute_environment: ComputeEnvironment
-    distributed_type: Union[DistributedType, SageMakerDistributedType]
+    distributed_type: DistributedType
     mixed_precision: str
     use_cpu: bool
 
@@ -124,10 +111,7 @@ class BaseConfig:
         if isinstance(self.compute_environment, str):
             self.compute_environment = ComputeEnvironment(self.compute_environment)
         if isinstance(self.distributed_type, str):
-            if self.compute_environment == ComputeEnvironment.AMAZON_SAGEMAKER:
-                self.distributed_type = SageMakerDistributedType(self.distributed_type)
-            else:
-                self.distributed_type = DistributedType(self.distributed_type)
+            self.distributed_type = DistributedType(self.distributed_type)
 
 
 @dataclass
@@ -140,33 +124,8 @@ class ClusterConfig(BaseConfig):
     rdzv_backend: Optional[str] = "static"
     same_network: Optional[bool] = False
     main_training_function: str = "main"
-
-    # args for deepspeed_plugin
-    deepspeed_config: dict = None
-    # args for fsdp
-    fsdp_config: dict = None
     # args for TPU
     downcast_bf16: bool = False
 
     def __post_init__(self):
-        if self.deepspeed_config is None:
-            self.deepspeed_config = {}
-        if self.fsdp_config is None:
-            self.fsdp_config = {}
         return super().__post_init__()
-
-
-@dataclass
-class SageMakerConfig(BaseConfig):
-    ec2_instance_type: str
-    iam_role_name: str
-    image_uri: str
-    profile: Optional[str] = None
-    region: str = "us-east-1"
-    num_machines: int = 1
-    base_job_name: str = f"accelerate-sagemaker-{num_machines}"
-    pytorch_version: str = SAGEMAKER_PYTORCH_VERSION
-    transformers_version: str = SAGEMAKER_TRANSFORMERS_VERSION
-    py_version: str = SAGEMAKER_PYTHON_VERSION
-    sagemaker_inputs_file: str = None
-    sagemaker_metrics_file: str = None

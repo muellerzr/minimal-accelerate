@@ -5,10 +5,8 @@
 from .constants import MODEL_NAME, OPTIMIZER_NAME, RNG_STATE_NAME, SCALER_NAME, SCHEDULER_NAME, TORCH_LAUNCH_PARAMS
 from .dataclasses import (
     ComputeEnvironment,
-    DeepSpeedPlugin,
     DistributedDataParallelKwargs,
     DistributedType,
-    FullyShardedDataParallelPlugin,
     GradScalerKwargs,
     InitProcessGroupKwargs,
     KwargsHandler,
@@ -34,30 +32,6 @@ from .imports import (
     is_tpu_available,
     is_transformers_available,
     is_wandb_available,
-)
-from .modeling import (
-    check_device_map,
-    compute_module_sizes,
-    convert_file_size_to_int,
-    dtype_byte_size,
-    find_tied_parameters,
-    get_balanced_memory,
-    get_max_layer_size,
-    get_max_memory,
-    infer_auto_device_map,
-    load_checkpoint_in_model,
-    load_offloaded_weights,
-    named_module_tensors,
-    set_module_tensor_to_device,
-)
-from .offload import (
-    OffloadedWeightsLoader,
-    PrefixedDataset,
-    extract_submodules_state_dict,
-    load_offloaded_weight,
-    offload_state_dict,
-    offload_weight,
-    save_offload_index,
 )
 from .operations import (
     broadcast,
@@ -94,7 +68,6 @@ if is_deepspeed_available():
     )
 
 from .launch import PrepareForLaunch, _filter_args, get_launch_prefix
-from .memory import find_executable_batch_size
 from .other import (
     extract_model_from_parallel,
     get_pretty_name,

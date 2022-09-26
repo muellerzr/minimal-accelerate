@@ -41,8 +41,7 @@ setup(
     author="The HuggingFace team",
     author_email="sylvain@huggingface.co",
     url="https://github.com/huggingface/accelerate",
-    package_dir={"": "src"},
-    packages=find_packages("src"),
+    packages=find_packages("."),
     entry_points={
         "console_scripts": [
             "accelerate=accelerate.commands.accelerate_cli:main",

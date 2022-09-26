@@ -68,6 +68,8 @@ class AcceleratorState:
         self,
         mixed_precision: str = None,
         cpu: bool = False,
+        deepspeed_plugin=None,
+        fsdp_plugin=None,
         _from_accelerator: bool = False,
         **kwargs,
     ):
@@ -78,6 +80,7 @@ class AcceleratorState:
         self.fork_launched = parse_flag_from_env("FORK_LAUNCHED", 0)
         if not getattr(self, "initialized", False):
             self.backend = None
+            self.deepspeed_plugin = None
             mixed_precision = (
                 parse_choice_from_env("MIXED_PRECISION", "no") if mixed_precision is None else mixed_precision.lower()
             )
@@ -113,6 +116,11 @@ class AcceleratorState:
                 self.device = torch.device("cuda", self.local_process_index)
                 torch.cuda.set_device(self.device)
                 self.mixed_precision = mixed_precision
+                if os.environ.get("USE_FSDP", "false") == "true":
+                    self.distributed_type = DistributedType.FSDP
+                    if self.mixed_precision != "no":
+                        fsdp_plugin.set_mixed_precision(self.mixed_precision)
+                    self.fsdp_plugin = fsdp_plugin
             elif get_int_from_env(["PMI_SIZE", "OMPI_COMM_WORLD_SIZE", "MV2_COMM_WORLD_SIZE", "WORLD_SIZE"], 1) > 1:
                 self.distributed_type = DistributedType.MULTI_CPU
                 if is_ccl_available() and get_int_from_env(["CCL_WORKER_COUNT"], 0) > 0:
@@ -199,10 +207,7 @@ class AcceleratorState:
             f"Local process index: {self.local_process_index}\n"
             f"Device: {self.device}\n"
         )
-        if self.distributed_type == DistributedType.DEEPSPEED:
-            repr += f"ds_config: {self.deepspeed_plugin.deepspeed_config}\n"
-        else:
-            repr += f"Mixed precision type: {mixed_precision}\n"
+        repr += f"Mixed precision type: {mixed_precision}\n"
         return repr
 
     # For backward compatibility
